@@ -1,2 +1,8 @@
 cscope.*
 tags
+*.o*
+*.ko*
+.tmp_versions
+Module.symvers
+carrefour.mod.c
+

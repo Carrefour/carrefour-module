@@ -28,9 +28,10 @@ int phys2node(u64 physaddr) {
    int j;
    for(j = 0; j < num_online_nodes(); j++) { 
       if(physaddr < nodes_phys_end[j])
-         return j;
+         break;
    }
-   return num_online_nodes() + 1;
+
+   return j;
 }
 
 unsigned long node2physend(int node) {
@@ -237,7 +238,8 @@ void machine_init(void) {
    for(j = 0; j < num_online_nodes(); j++) { 
 	   if(!NODE_DATA(j)) 
 		   continue; 
-	   nodes_phys_end[j] =  node_end_pfn(j)*(4LL*1024LL); 
+      printk("Node %d: [ %lu - %lu ]\n", j, node_start_pfn(j)*(4UL*1024UL) / (1024*1024*1024), node_end_pfn(j)*(4UL*1024UL)/(1024*1024*1024));
+	   nodes_phys_end[j] =  node_end_pfn(j)*(4UL*1024UL); 
    }
 
 

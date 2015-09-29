@@ -30,7 +30,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 void set_ibs_rate(int cnt, int ops) {
    unsigned int low, high;
    uint32_t rand = 0;
-   low = (((cnt + rand) >> 4) & 0xFFFF)
+   low = 
+      ((((cnt + rand) >> 20) & 0x3F) << 20)
+      + (((cnt + rand) >> 4) & 0xFFFF)
       + ((ops & 0x1) << 19) // bit 19
       + IBS_OP_LOW_ENABLE;
    high = 0;

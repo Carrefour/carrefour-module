@@ -29,11 +29,7 @@ struct task_struct * work_thread;
 unsigned long min_lin_address = MIN_LIN_ADDR;
 unsigned long max_lin_address = MAX_LIN_ADDR;
 
-unsigned sampling_rate_accurate  = 1;
-unsigned sampling_rate_cheap     = 1;
-unsigned sampling_rate           = 1;
-
-int consider_L1L2 = 0;
+unsigned long sampling_rate           = 1;
 
 #if FAKE_IBS
 static unsigned long pids[MAX_PIDS_PER_APP];

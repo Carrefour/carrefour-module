@@ -22,20 +22,38 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define MAX_PAGES_TO_WATCH_ACCURATE 30000
 #define MAX_PAGES_TO_WATCH_CHEAP    10000
-#define MAX_PIDS_TO_WATCH 64 /* must be a multiple of 64 */
-
-#define SET_TID(bitmask, index) \
-   bitmask[(index)/64] = bitmask[(index)/64] | (1 << ((index)%64))
-#define IS_SET_TID(bitmask, index) \
-   bitmask[(index)/64] & (1 << ((index)%64))
 
 struct sdpage {
-	  	struct rb_node node;
-	  	void *page_phys,*page_lin;
-      int nb_accesses[MAX_NUMNODES];
-      pid_t tgid;
-      u64 tids[MAX_PIDS_TO_WATCH/64];
-      int nb_writes;
+   struct rb_node node;
+   void *page_phys,*page_lin;
+   unsigned nb_accesses[MAX_NUMNODES];
+   unsigned nb_accesses_dram[MAX_NUMNODES];
+   pid_t tgid;
+   int nb_writes;
+
+   int huge;
+   int split;
+   int migrated;
+   int invalid;
+
+   int logical_time;
+
+   int last_tid;
+   int accessed_by_multiple_threads;
+
+   // Computed stats
+   int interleaving_chosen_node;
+   int accounted;
+
+   unsigned total_accesses;
+   unsigned total_accesses_w_cache;
+   unsigned local_accesses;
+   unsigned local_accesses_max;
+   unsigned nr_nodes;
+
+   unsigned is_hot;
+
+   struct sdpage * THP_page;
 };
 
 struct rbtree_stats_t {
@@ -49,18 +67,35 @@ struct rbtree_stats_t {
 struct page_reserve {
    unsigned index;
    unsigned max_pages_to_watch;
-   struct sdpage pages[MAX_PAGES_TO_WATCH_ACCURATE];
+   struct sdpage* pages;
 };
 
-extern struct rb_root pagetree;
-extern spinlock_t pagetree_lock;
-extern struct page_reserve pagesreserve;
+struct pagetree {
+   struct rb_root       root;
+   spinlock_t           lock;
+   struct page_reserve  reserve;
+
+   const char *         name;
+   int                  warned_overflow;
+   int                  initialized;
+   int                  logical_time;
+};
+
+void rbtree_load_module(void);
+void rbtree_remove_module(void);
 
 void rbtree_init(void);
 void rbtree_add_sample(int is_kernel, struct ibs_op_sample *ibs_op, int cpu, int pid, int tgid);
-void rbtree_print(void);
+void rbtree_print(struct pagetree * tree); 
 void rbtree_clean(void);
 void rbtree_get_merged_stats(struct rbtree_stats_t * stats_to_fill, struct carrefour_run_stats * c_stats);
+void get_rbtree(struct pagetree ** tree, struct pagetree ** tree_huge);
 
+struct sdpage * insert_in_page_rbtree(struct rb_root *root, struct sdpage *data, int add);
+
+int has_been_accessed_recently(struct sdpage * page);
+void register_new_split_page(unsigned long page_phys);
+int has_been_split(unsigned long page_phys);
+ 
 #endif
 

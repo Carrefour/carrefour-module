@@ -41,47 +41,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <linux/highmem.h>
 #include <linux/swap.h>
 #include <linux/mempolicy.h>
+#include <linux/hugetlb.h>
 
-#define DUMP_OVERHEAD            1
-
-#define ENABLE_THREAD_PLACEMENT  0
-#define ENABLE_REPLICATION       1
-#define ENABLE_INTERLEAVING      1
-#define ENABLE_MIGRATION         1
-
-#define REPLICATION_PER_TID      0
-#define PAGE_BOUNCING_FIX        0
-
-#define VERBOSE                  1
-
-#define FAKE_IBS                 0
-
-#if ! FAKE_IBS
-#define ADAPTIVE_SAMPLING        1
-#else
-#define ADAPTIVE_SAMPLING        0
-#endif
-
-#define PREDICT_WITH_STDDEV      0
-#define STDDEV_THRESHOLD         200
-
-#define DETAILED_STATS           0
-#define AGGRESSIVE_FIX           0
-
-#if AGGRESSIVE_FIX && !DETAILED_STATS
-#error AGGRESSIVE_FIX requires DETAILED_STATS
-#endif
-
-#if ENABLE_MIGRATION + ENABLE_INTERLEAVING == 1
-//#warning "Are you sure you want to enable only one of ENABLE_MIGRATION and ENABLE_INTERLEAVING ?"
-#endif
-
-#if !VERBOSE
-#define printk(args...) do {} while (0)
-#endif
-
-#if ENABLE_REPLICATION
 #include <linux/replicate.h>
+#include <linux/carrefour-hooks.h>
+
+#define FAKE_IBS           0
+
 #ifdef LEGACY_MADV_REP
 #define MADV_REPLICATE     16
 #define MADV_DONTREPLICATE 17
@@ -89,10 +55,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define MADV_REPLICATE     63
 #define MADV_DONTREPLICATE 64
 #endif
-#endif
 
-#define SDPAGE_SIZE (4*1024)
 #define SDPAGE_MASK (~(PAGE_SIZE-1))
+#define HGPAGE_MASK (~(HPAGE_SIZE-1))
 
 int start_profiling(void);
 int stop_profiling(void);
@@ -106,14 +71,13 @@ struct page_to_node {
    int status;
 };
 
+#include "console.h"
+#include "carrefour_options.h"
 #include "ibs_struct.h"
 #include "ibs_main.h"
 #include "carrefour.h"
 #include "carrefour_machine.h"
 #include "carrefour_rbtree.h"
-#include "carrefour_migrate.h"
-#include "carrefour_tids.h"
-#include "carrefour_hooks.h"
 #include "carrefour_tid_replication.h"
 
 #endif

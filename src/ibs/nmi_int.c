@@ -27,7 +27,6 @@
 #include "nmi_int.h"
 
 #if ! FAKE_IBS
-
 static DEFINE_PER_CPU(unsigned long, saved_lvtpc);
 static struct ibs_model *model;
 

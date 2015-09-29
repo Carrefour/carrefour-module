@@ -1,11 +1,13 @@
 obj-m += carrefour.o
-carrefour-y := src/carrefour_main.o src/carrefour_rbtree.o src/carrefour.o src/carrefour_migrate.o src/carrefour_machine.o src/carrefour_tids.o  src/carrefour_tid_replication.o
-carrefour-y += src/ibs/nmi_int.o src/ibs/ibs_init.o src/ibs/ibs_main.o src/ibs/fake_ibs.o
+carrefour-y := src/carrefour_main.o src/carrefour_rbtree.o src/carrefour.o src/carrefour_machine.o src/carrefour_tid_replication.o src/console.o
+carrefour-y += src/carrefour_options.o src/ibs/nmi_int.o src/ibs/ibs_init.o src/ibs/ibs_main.o src/ibs/fake_ibs.o
 
 ccflags-y := -I$(src)/include
 ccflags-y += -I$(src)/src/ibs/include
+ccflags-y += -Werror
 
 KV = $(shell uname -r)
+OPTERON = $(shell if [ `grep -m 1 family /proc/cpuinfo | awk '{print $$4}'` -lt 21 ]; then echo "y"; else echo "n"; fi)
 
 KDIR := /lib/modules/$(KV)/build
 PWD := $(shell pwd)
@@ -14,19 +16,18 @@ ifeq ($(KV), 3.2.1-replication+)
 ccflags-y += -DLEGACY_MADV_REP
 endif
 
-#Recheck that the kernel symbols are at the last version everytime
-.PHONY: carrefour_hooks.h tags 
+ifeq ($(OPTERON), y)
+ccflags-y += -DOPTERON
+endif
 
-default: carrefour_hooks.h tags
+.PHONY: tags default
+
+default: tags
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
-
-carrefour_hooks.h: create_hooks.pl
-	$(PWD)/create_hooks.pl $(PWD)/include
 
 clean:
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) clean
 	rm -f modules.order
-	rm -f include/carrefour_hooks.h
 
 clean_tags:
 	rm cscope.*
@@ -35,5 +36,5 @@ clean_tags:
 mrproper: clean clean_tags
 
 tags:
-	ctags --totals `find . -name '*.[ch]'`
-	cscope -b -q -k -R -s.
+	ctags --totals `find . -name '*.[ch]'` $(KDIR)/include/linux/carrefour-hooks.h
+	cscope -b -q -k -R -s. -s$(KDIR)/include/linux/carrefour-hooks.h

@@ -38,12 +38,12 @@ static struct tid_reserve tidsreserve;
 
 /** init **/
 void replicationtid_init(void) {
-   pagetree = RB_ROOT;
+   replicationtidtree = RB_ROOT;
    tidsreserve.index = 0;
 }
 
 /** rbtree insert; for some reason the kernel does not provide an implem... */
-static struct sdtid * insert_in_page_rbtree(struct rb_root *root, struct sdtid *data, int add) {
+static struct sdtid * insert_in_page_tidrbtree(struct rb_root *root, struct sdtid *data, int add) {
    struct rb_node **new = &(root->rb_node), *parent = NULL;
 
    /* Figure out where to put new node */
@@ -76,7 +76,7 @@ void change_replication_state(int pid, int allow) {
    tmp = &tidsreserve.tids[tidsreserve.index];
    tmp->tgid = pid;
 
-   tmp2 = insert_in_page_rbtree(&replicationtidtree, tmp, 1);
+   tmp2 = insert_in_page_tidrbtree(&replicationtidtree, tmp, 1);
    if(tmp2 == tmp)
       tidsreserve.index++;
 
@@ -85,9 +85,14 @@ void change_replication_state(int pid, int allow) {
 
 int is_allowed_to_replicate(int pid) {
    struct sdtid tmp, *tmp2;
+
+   if(!carrefour_module_options[REPLICATION_PER_TID].value) {
+      return 1;
+   }
+
    tmp.tgid = pid;
 
-   tmp2 = insert_in_page_rbtree(&replicationtidtree, &tmp, 0);
+   tmp2 = insert_in_page_tidrbtree(&replicationtidtree, &tmp, 0);
    if(!tmp2)
       return 0; //default is "do not replicate"
 
